@@ -3,7 +3,7 @@
 #include <TextFinder.h>
 #include <LiquidCrystal.h>
 
-boolean DEBUG = true;
+boolean DEBUG = false;
 
 int LIGHT_PIN = 2;
 
@@ -64,19 +64,21 @@ void loop() {
       // Print the new tweet
       printMessage("New tweet from:", last_author, 0);
 
-      // Turn the light on
-      if(DEBUG) Serial.println("Turning the light on");
-      digitalWrite(LIGHT_PIN, HIGH);  
-      if(DEBUG) Serial.print("Pausing.."); 
-      for (int i = 0; i < 6; i++) {
-         if(DEBUG) Serial.print(".");
-         delay(1000);
+      if (tweetCount > 1) {
+        // Turn the light on
+        if(DEBUG) Serial.println("Turning the light on");
+        digitalWrite(LIGHT_PIN, HIGH);  
+        if(DEBUG) Serial.print("Pausing.."); 
+        for (int i = 0; i < 6; i++) {
+           if(DEBUG) Serial.print(".");
+           delay(1000);
+        }
+        if(DEBUG) Serial.println();
+       
+        // Turn the light off
+        if(DEBUG) Serial.println("Turning the light off");
+        digitalWrite(LIGHT_PIN, LOW);
       }
-      if(DEBUG) Serial.println();
-     
-      // Turn the light off
-      if(DEBUG) Serial.println("Turning the light off");
-      digitalWrite(LIGHT_PIN, LOW);
    } else {
       printMessage("No new tweet");
       printMessage("Last tweet from:", last_author);
