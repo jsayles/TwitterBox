@@ -30,7 +30,7 @@ void setup() {
 
   // Get the LCD fired up
   lcd.begin(16, 2);
-  printMessage("TwitterBox v2.0");
+  printMessage("TwitterBox v2.5");
   
   // Turn on the network
   printMessage("Starting up ", "Ethernet...");
@@ -56,7 +56,7 @@ void setup() {
 void loop() {   
    loopCount++;
    if (DEBUG) {
-     Serial.println("==================== (" + String(loopCount) + ")");
+     Serial.println("==================== (Loop " + String(loopCount) + ")");
    }
    
    // Look for a new tweet
@@ -73,23 +73,21 @@ void loop() {
       if(DEBUG) Serial.println("Turning the light off...");
       digitalWrite(LIGHT_PIN, LOW);
    } else {
-      printMessage("No new tweets");
+      printMessage("No new tweet");
       printMessage("Last tweet from:", last_author);
    }     
         
     // A few closing messages
     printMessage("Tweets Counted:", String(tweetCount));
-    //printMessage("Total Loops:", loopCount);
-    //printMessage("Last tweet on:", last_timestamp);
-    //printMessage("Pausing before", "next attempt...", 5000);
 }
+
   
 boolean getTweet() {
    boolean return_value;
   
    printMessage("Searching for", "@officenomads");
    if (client.connect("search.twitter.com", 80)) {
-      if(DEBUG) Serial.println("Connection Established!");
+      if(DEBUG) Serial.println("Connection established...");
       client.println("GET http://search.twitter.com/search.atom?q=%40officenomads HTTP/1.0"); 
       client.println("Host: search.twitter.com");
       client.println("Connection: close");
@@ -126,23 +124,17 @@ boolean getTweet() {
     */
     
     if (client.connected()) {
+       if(DEBUG) Serial.println("Pulling twitter data...");
        if(finder.find("entry") ) { 
-          // Pull the tweet from the <title> elemet      
+          // Pull the tweet from the <title> elemet   
+          if(DEBUG) Serial.print("   - tweet: ");
           char tweet_buffer[140];
           finder.getString("<title>" ,"</title>", tweet_buffer, 140);
           String new_tweet = String(tweet_buffer);
-          if(DEBUG) {
-            Serial.print("   - tweet: ");
-            Serial.println(new_tweet);
-          }
-          
-          // Stop right now if we've seen this before
-          if (new_tweet == last_tweet) {
-            if(DEBUG) Serial.println("We've seen this tweet before! Moving on...");
-            return_value = false;
-          }
+          if(DEBUG) Serial.println(new_tweet);
           
           // Pull the timestamp from the <updated> element
+          if(DEBUG) Serial.print("   - timestamp: ");
           char ts_buffer[17];
           finder.getString("<updated>" ,"</updated>", ts_buffer, 17);
           //Serial.print(ts_buffer);
@@ -162,29 +154,28 @@ boolean getTweet() {
             ts_buffer[i] = ' ';
           }
           long new_timestamp = atol(ts_buffer);
-          if(DEBUG) {
-            Serial.print("   - timestamp: ");
-            Serial.println(new_timestamp);
-          }
+          if(DEBUG) Serial.println(new_timestamp);
           
-          // Stop right now if this tweet is old
-          if (new_timestamp <= last_timestamp) {
-            if(DEBUG) Serial.println("   ! OLD TWEET !");
-            return_value = false;
-          } else {
-            // Pull the author
-            char author_buffer[16];
-            finder.getString("<name>" ," (", author_buffer, 16);        
-            last_author = "@" + String(author_buffer);
-            last_author.toLowerCase();
-            if(DEBUG) {
-              Serial.print("   - author: ");
-              Serial.println(last_author);
-            }
+          // Pull the author
+          if(DEBUG) Serial.print("   - author: ");
+          char author_buffer[16];
+          finder.getString("<name>" ," (", author_buffer, 16);        
+          String new_author = "@" + String(author_buffer);
+          new_author.toLowerCase();
+          if(DEBUG) Serial.println(new_author);
 
-            // Save this info for next itme
+          // Stop right now if we've seen this before
+          if (new_tweet == last_tweet) {
+            if(DEBUG) Serial.println("We've seen this tweet before! Moving on...");
+            return_value = false;
+          } else if (new_timestamp <= last_timestamp) {
+            if(DEBUG) Serial.println("This is an older tweet!  Moving on...");
+            return_value = false;
+          } else {           
+            // Save this info for next time
             last_tweet = new_tweet;
             last_timestamp = new_timestamp;
+            last_author = new_author;
             tweetCount++;
           }
        } else {
@@ -215,9 +206,12 @@ void printMessage(String line1, String line2) {
 void printMessage(String line1, String line2, int delayMS) {
   // One to the serial
   if(DEBUG) {
-    Serial.println(line1);
+    Serial.print(line1);
     if (line2 != "") {
+      Serial.print(" ");
       Serial.println(line2);
+    } else {
+      Serial.println();
     }
   }
   
