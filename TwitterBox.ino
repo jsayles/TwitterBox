@@ -33,7 +33,7 @@ void setup() {
   printMessage("TwitterBox v2.5");
   
   // Turn on the network
-  printMessage("Starting up ", "Ethernet...");
+  printMessage("Starting up", "Ethernet...");
   // start the Ethernet connection:
   if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
@@ -61,16 +61,21 @@ void loop() {
    
    // Look for a new tweet
    if (getTweet()) {
-      // Turn the light on
-      if(DEBUG) Serial.println("Turning the light on...");
-      digitalWrite(LIGHT_PIN, HIGH);   
-  
       // Print the new tweet
-      if(DEBUG) Serial.println(last_tweet);
-      printMessage("New tweet from:", last_author, 10000);
+      printMessage("New tweet from:", last_author, 0);
+
+      // Turn the light on
+      if(DEBUG) Serial.println("Turning the light on");
+      digitalWrite(LIGHT_PIN, HIGH);  
+      if(DEBUG) Serial.print("Pausing.."); 
+      for (int i = 0; i < 6; i++) {
+         if(DEBUG) Serial.print(".");
+         delay(1000);
+      }
+      if(DEBUG) Serial.println();
      
       // Turn the light off
-      if(DEBUG) Serial.println("Turning the light off...");
+      if(DEBUG) Serial.println("Turning the light off");
       digitalWrite(LIGHT_PIN, LOW);
    } else {
       printMessage("No new tweet");
@@ -83,7 +88,7 @@ void loop() {
 
   
 boolean getTweet() {
-   boolean return_value;
+   boolean return_value = true;
   
    printMessage("Searching for", "@officenomads");
    if (client.connect("search.twitter.com", 80)) {
