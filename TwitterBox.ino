@@ -2,6 +2,7 @@
 #include <SPI.h>
 #include <TextFinder.h>
 #include <LiquidCrystal.h>
+#include <avr/wdt.h>
 
 boolean DEBUG = false;
 
@@ -25,12 +26,15 @@ void setup() {
   Serial.begin(9600);
   delay(100);
 
+  // Watchdog timer
+  wdt_enable(WDTO_8S);
+  
   // Hook up the light hardware
   pinMode(LIGHT_PIN, OUTPUT);     
 
   // Get the LCD fired up
   lcd.begin(16, 2);
-  printMessage("TwitterBox v2.5");
+  printMessage("TwitterBox v2.6");
   
   // Turn on the network
   printMessage("Starting up", "Ethernet...");
@@ -211,6 +215,9 @@ void printMessage(String line1, String line2) {
 }
 
 void printMessage(String line1, String line2, int delayMS) {
+  // Reset the watchdog
+  wdt_reset();
+  
   // One to the serial
   if(DEBUG) {
     Serial.print(line1);
