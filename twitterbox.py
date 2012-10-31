@@ -3,9 +3,23 @@
 from settings import *
 import RPi.GPIO as GPIO
 import tweetstream
+import logging
 import time
 
 def main():
+  # Setup Logging
+  logger = logging.getLogger('twitterbox')
+  hdlr = logging.FileHandler(LOG)
+  formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+  hdlr.setFormatter(formatter)
+  logger.addHandler(hdlr) 
+  logger.setLevel(logging.INFO)
+  logger.info("Starting up...")
+
+  # A little feedback 
+  for w in TWITTER_TRACK:
+    logger.info("Watching twitter for " + w)
+
   # Not interested
   GPIO.setwarnings(False)
 
@@ -18,15 +32,11 @@ def main():
   GPIO.setup(LCD_D6, GPIO.OUT) # DB6
   GPIO.setup(LCD_D7, GPIO.OUT) # DB7
   lcd_init()
+  write_lcd("Starting Up...", "")
 
   # Setup the alert light
   GPIO.setup(LIGHT_PIN, GPIO.OUT) 
   GPIO.output(LIGHT_PIN, GPIO.LOW)
-
-  # A little feedback 
-  for w in TWITTER_TRACK:
-    print "Watching twitter for " + w
-    write_lcd("Watching for", w)
 
   while True:
     try:
@@ -34,14 +44,14 @@ def main():
       for tweet in stream:
         author = tweet['user']['screen_name']
         text = tweet['text']
-        print "@" + author + ": " + text
+        logger.info("@" + author + ": " + text)
         write_lcd("New Tweet!", "@" + author)
         GPIO.output(LIGHT_PIN, GPIO.HIGH)
         time.sleep(10)
         GPIO.output(LIGHT_PIN, GPIO.LOW)
         write_lcd("Watching Twitter", "...")
     except tweetstream.ConnectionError, e:
-      print "Disconnected from twitter. Reason:", e.reason
+      logger.error("Disconnected from twitter. Reason:", e.reason)
 
 def write_lcd(line1, line2):
   lcd_byte(LCD_LINE_1, LCD_CMD)

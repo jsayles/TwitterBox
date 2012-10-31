@@ -3,6 +3,9 @@ TWITTER_USER="your_twitter_user"
 TWITTER_PASS="your_twitter_password"
 TWITTER_TRACK=["stuff", "you want", "to track"]
 
+# Log file
+LOG="twitterbox.log"
+
 # Where did you plug in the light?
 LIGHT_PIN = 4
 
