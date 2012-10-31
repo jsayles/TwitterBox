@@ -1,1 +1,6 @@
 Office Nomads Twitter Box!
+
+# Install Requirements
+	pip install -r requirements.txt
+
+	GPIO Libraries:  http://pypi.python.org/pypi/RPi.GPIO
