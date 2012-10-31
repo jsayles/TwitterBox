@@ -1,6 +1,5 @@
 Office Nomads Twitter Box!
 
-# Install Requirements
-	pip install -r requirements.txt
-
+# Required Libraries
+	Tweetstream: http://pypi.python.org/pypi/tweetstream/
 	GPIO Libraries:  http://pypi.python.org/pypi/RPi.GPIO

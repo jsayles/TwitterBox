@@ -1,2 +1,0 @@
-tweetstream
-python-rpi.gpio
