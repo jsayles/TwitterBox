@@ -1,11 +1,14 @@
 #!/usr/bin/python
 
-import settings
+from settings import *
 import RPi.GPIO as GPIO
 import tweetstream
 import time
 
 def main():
+  # Not interested
+  GPIO.setwarnings(False)
+
   # Initialise display
   GPIO.setmode(GPIO.BCM)       # Use BCM GPIO numbers
   GPIO.setup(LCD_E, GPIO.OUT)  # E
