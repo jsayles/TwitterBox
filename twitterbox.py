@@ -32,12 +32,12 @@ def main():
   GPIO.setup(LCD_D6, GPIO.OUT) # DB6
   GPIO.setup(LCD_D7, GPIO.OUT) # DB7
   lcd_init()
-  write_lcd("Starting Up...", "")
 
   # Setup the alert light
   GPIO.setup(LIGHT_PIN, GPIO.OUT) 
   GPIO.output(LIGHT_PIN, GPIO.LOW)
 
+  write_lcd("Watching Twitter", "...")
   while True:
     try:
       stream = tweetstream.FilterStream(TWITTER_USER, TWITTER_PASS, track=TWITTER_TRACK)
