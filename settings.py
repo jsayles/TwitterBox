@@ -1,7 +1,9 @@
 # Twitter settings
-TWITTER_USER="your_twitter_user"
-TWITTER_PASS="your_twitter_password"
-TWITTER_TRACK=["stuff", "you want", "to track"]
+consumer_key="your consumer key"
+consumer_secret="your consumer secret"
+access_key = "your acces key"
+access_secret = "your access secret"
+track=["what", "you want", "to", "track"]
 
 # Log file
 LOG="twitterbox.log"

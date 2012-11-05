@@ -1,5 +1,5 @@
 Office Nomads Twitter Box!
 
 # Required Libraries
-	Tweetstream: http://pypi.python.org/pypi/tweetstream/
+	Tweepy: http://tweepy.github.com
 	GPIO Libraries:  http://pypi.python.org/pypi/RPi.GPIO
