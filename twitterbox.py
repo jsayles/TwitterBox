@@ -49,7 +49,7 @@ class Watcher(threading.Thread):
 			stream = tweepy.streaming.Stream(auth, listener)
 			stream.filter(track=track)
 		except:
-			print "Disconnected from twitter."
+			logger.error("Disconnected from twitter.")
 
 ########################################################################
 class Printer(threading.Thread):
