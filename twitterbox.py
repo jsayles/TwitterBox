@@ -12,9 +12,10 @@ import os
 ########################################################################
 class CustomStreamListener(tweepy.StreamListener):
 	#----------------------------------------------------------------------
-	def __init__(self, queue):
+	def __init__(self, queue, logger):
 		tweepy.StreamListener.__init__(self)
 		self.q = queue
+		self.logger = logger
 
 	#----------------------------------------------------------------------
 	def on_status(self, status):
@@ -22,12 +23,12 @@ class CustomStreamListener(tweepy.StreamListener):
 
 	#----------------------------------------------------------------------
 	def on_error(self, status_code):
-		print >> sys.stderr, 'Encountered error with status code:', status_code
+		logger.error("Encountered error with status code: " + status_code)
 		return True # Don't kill the stream
 
 	#----------------------------------------------------------------------
 	def on_timeout(self):
-		print >> sys.stderr, 'Timeout...'
+		logger.error("Timeout...")
 		return True # Don't kill the stream
 
 ########################################################################
@@ -48,7 +49,7 @@ class Watcher(threading.Thread):
 			stream = tweepy.streaming.Stream(auth, listener)
 			stream.filter(track=track)
 		except:
-			print "Disconnected from twitter. Reason:"
+			print "Disconnected from twitter."
 
 ########################################################################
 class Printer(threading.Thread):
@@ -115,7 +116,6 @@ def main():
 
 	c = 1
 	while True:
-		queue.put("Testing: " + str(c))
 		time.sleep(1)
 		c=c+1
 
