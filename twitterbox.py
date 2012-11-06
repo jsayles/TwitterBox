@@ -16,6 +16,7 @@ class CustomStreamListener(tweepy.StreamListener):
 		tweepy.StreamListener.__init__(self)
 		self.queue = queue
 		self.logger = logger
+		self.logger.debug("Twitter listener created")
 
 	#----------------------------------------------------------------------
 	def on_status(self, status):
@@ -23,7 +24,11 @@ class CustomStreamListener(tweepy.StreamListener):
 
 	#----------------------------------------------------------------------
 	def on_error(self, status_code):
-		self.logger.error("Encountered error with status code: " + status_code)
+		if status_code == 420:
+			self.logger.error("Hit the rate limit for twitter... sleeping for a minute")
+			time.sleep(60)
+		else:
+			self.logger.error("Encountered error with status code: " + str(status_code))
 		return True # Don't kill the stream
 
 	#----------------------------------------------------------------------
@@ -38,6 +43,7 @@ class Watcher(threading.Thread):
 		threading.Thread.__init__(self)
 		self.queue = queue
 		self.logger = logger
+		self.logger.debug("Twitter watcher created")
 
 	#----------------------------------------------------------------------
 	def run(self):
@@ -45,14 +51,11 @@ class Watcher(threading.Thread):
 			auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 			auth.set_access_token(access_key, access_secret)
 			api = tweepy.API(auth)
-			auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-			auth.set_access_token(access_key, access_secret)
-			api = tweepy.API(auth)
 			listener = CustomStreamListener(self.queue, self.logger)
 			stream = tweepy.streaming.Stream(auth, listener)
 			self.logger.info("Starting twitter stream")
 			stream.filter(track=track)
-			self.logger.info("Twitter stream closed")
+			self.logger.error("Twitter stream closed")
 		except Exception as e:
 			self.logger.error("Disconnected from twitter: " + str(e))
 
@@ -63,19 +66,26 @@ class Printer(threading.Thread):
 		threading.Thread.__init__(self)
 		self.queue = queue
 		self.logger = logger
+		self.logger.debug("Twitter printer created")
 
 	#----------------------------------------------------------------------
 	def run(self):
 		while True:
-			msg = self.queue.get()
-			self.logger.info(msg)
-			write_lcd("New Tweet!", msg)
-			GPIO.output(LIGHT_PIN, GPIO.HIGH)
-			time.sleep(10)
-			GPIO.output(LIGHT_PIN, GPIO.LOW)
-			write_lcd("Watching Twitter", "...")
-			self.queue.task_done()
+			try:
+				msg = self.queue.get()
+				self.logger.info(msg)
+				write_lcd("New Tweet!", msg)
+				self.logger.debug("Light on...")
+				GPIO.output(LIGHT_PIN, GPIO.HIGH)
+				time.sleep(10)
+				self.logger.debug("Light off")
+				GPIO.output(LIGHT_PIN, GPIO.LOW)
+				write_lcd("Watching Twitter", "...")
+				self.queue.task_done()
+			except Exception as e:
+				self.logger.error("Exception in printer: " + str(e))
 
+########################################################################
 def main():
 	# Setup Logging
 	logger = logging.getLogger('twitterbox')
@@ -83,7 +93,10 @@ def main():
 	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 	hdlr.setFormatter(formatter)
 	logger.addHandler(hdlr) 
-	logger.setLevel(logging.INFO)
+	if DEBUG:
+		logger.setLevel(logging.DEBUG)
+	else:
+		logger.setLevel(logging.INFO)
 	logger.info("Starting up...")
 
 	# A little feedback 
@@ -110,19 +123,28 @@ def main():
 	write_lcd("Watching Twitter", "...")
 
 	queue = Queue.Queue()
-
-	printer = Printer(queue, logger)
-	printer.setDaemon(True)
-	printer.start()
-
-	watcher = Watcher(queue, logger)
-	watcher.setDaemon(True)
-	watcher.start()
-
-	c = 1
+	watcher = None
+	printer = None
+	loops = 0
 	while True:
-		time.sleep(1)
-		c=c+1
+		loops = loops + 1
+		logger.debug("Main Loop " + str(loops))
+
+		# Make sure our twitter thread is alive and happy
+		if not watcher or not watcher.is_alive():
+			logger.info("Starting watcher thread")
+        		watcher = Watcher(queue, logger)
+        		watcher.setDaemon(True)
+        		watcher.start()
+
+		# Make sure our printing thread is alive and happy
+		if not printer or not printer.is_alive():
+			logger.info("Starting printer thread")
+        		printer = Printer(queue, logger)
+        		printer.setDaemon(True)
+        		printer.start()
+
+		time.sleep(10)
 
 def write_lcd(line1, line2):
 	lcd_byte(LCD_LINE_1, LCD_CMD)

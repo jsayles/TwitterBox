@@ -7,6 +7,7 @@ track=["what", "you want", "to", "track"]
 
 # Log file
 LOG="twitterbox.log"
+DEBUG=False
 
 # Where did you plug in the light?
 LIGHT_PIN = 4
