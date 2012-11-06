@@ -11,6 +11,7 @@ DEBUG=False
 
 # Where did you plug in the light?
 LIGHT_PIN = 4
+LIGHT_DELAY = 10
 
 # Define GPIO to LCD mapping
 LCD_RS = 7

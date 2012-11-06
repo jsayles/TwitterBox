@@ -77,7 +77,7 @@ class Printer(threading.Thread):
 				write_lcd("New Tweet!", msg)
 				self.logger.debug("Light on...")
 				GPIO.output(LIGHT_PIN, GPIO.HIGH)
-				time.sleep(10)
+				time.sleep(LIGHT_DELAY)
 				self.logger.debug("Light off")
 				GPIO.output(LIGHT_PIN, GPIO.LOW)
 				write_lcd("Watching Twitter", "...")
