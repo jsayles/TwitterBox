@@ -44,13 +44,15 @@ class Watcher(threading.Thread):
 		self.queue = queue
 		self.logger = logger
 		self.logger.debug("Twitter watcher created")
+		self.auth = None
+		self.api = None
 
 	#----------------------------------------------------------------------
 	def run(self):
+		if not self.auth or not self.api:
+			authenticate()
+			
 		try:
-			auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-			auth.set_access_token(access_key, access_secret)
-			api = tweepy.API(auth)
 			listener = CustomStreamListener(self.queue, self.logger)
 			stream = tweepy.streaming.Stream(auth, listener)
 			self.logger.info("Starting twitter stream")
@@ -59,6 +61,15 @@ class Watcher(threading.Thread):
 		except Exception as e:
 			self.logger.error("Disconnected from twitter: " + str(e))
 
+	def authenticate(self):
+		try:
+			auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+			auth.set_access_token(access_key, access_secret)
+			api = tweepy.API(auth)
+		except Exception as e:
+			self.logger.error("Could not authenticate: " + str(e))
+
+		
 ########################################################################
 class Printer(threading.Thread):
 	#----------------------------------------------------------------------
