@@ -14,21 +14,21 @@ class CustomStreamListener(tweepy.StreamListener):
 	#----------------------------------------------------------------------
 	def __init__(self, queue, logger):
 		tweepy.StreamListener.__init__(self)
-		self.q = queue
+		self.queue = queue
 		self.logger = logger
 
 	#----------------------------------------------------------------------
 	def on_status(self, status):
-		self.q.put("@" + status.user.screen_name + ": " + status.text)
+		self.queue.put("@" + status.user.screen_name + ": " + status.text)
 
 	#----------------------------------------------------------------------
 	def on_error(self, status_code):
-		logger.error("Encountered error with status code: " + status_code)
+		self.logger.error("Encountered error with status code: " + status_code)
 		return True # Don't kill the stream
 
 	#----------------------------------------------------------------------
 	def on_timeout(self):
-		logger.error("Timeout...")
+		self.logger.error("Timeout...")
 		return True # Don't kill the stream
 
 ########################################################################
@@ -36,7 +36,7 @@ class Watcher(threading.Thread):
 	#----------------------------------------------------------------------
 	def __init__(self, queue, logger):
 		threading.Thread.__init__(self)
-		self.q = queue
+		self.queue = queue
 		self.logger = logger
 
 	#----------------------------------------------------------------------
@@ -45,31 +45,36 @@ class Watcher(threading.Thread):
 			auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 			auth.set_access_token(access_key, access_secret)
 			api = tweepy.API(auth)
-			listener = CustomStreamListener(self.q)
+			auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+			auth.set_access_token(access_key, access_secret)
+			api = tweepy.API(auth)
+			listener = CustomStreamListener(self.queue, self.logger)
 			stream = tweepy.streaming.Stream(auth, listener)
+			self.logger.info("Starting twitter stream")
 			stream.filter(track=track)
-		except:
-			logger.error("Disconnected from twitter.")
+			self.logger.info("Twitter stream closed")
+		except Exception as e:
+			self.logger.error("Disconnected from twitter: " + str(e))
 
 ########################################################################
 class Printer(threading.Thread):
 	#----------------------------------------------------------------------
 	def __init__(self, queue, logger):
 		threading.Thread.__init__(self)
-		self.q = queue
+		self.queue = queue
 		self.logger = logger
 
 	#----------------------------------------------------------------------
 	def run(self):
 		while True:
-			msg = self.q.get()
+			msg = self.queue.get()
 			self.logger.info(msg)
 			write_lcd("New Tweet!", msg)
 			GPIO.output(LIGHT_PIN, GPIO.HIGH)
 			time.sleep(10)
 			GPIO.output(LIGHT_PIN, GPIO.LOW)
 			write_lcd("Watching Twitter", "...")
-			self.q.task_done()
+			self.queue.task_done()
 
 def main():
 	# Setup Logging
