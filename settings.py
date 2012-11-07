@@ -4,6 +4,7 @@ consumer_secret="your consumer secret"
 access_key = "your acces key"
 access_secret = "your access secret"
 track=["what", "you want", "to", "track"]
+screen_name="yourtwitterid"
 
 # Log file
 LOG="twitterbox.log"
