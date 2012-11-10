@@ -9,6 +9,8 @@ import tweepy
 import time
 import os
 
+LCD_BLOCKED = False
+
 ########################################################################
 class CustomStreamListener(tweepy.StreamListener):
 	#----------------------------------------------------------------------
@@ -101,14 +103,17 @@ class Printer(threading.Thread):
 			try:
 				msg = self.queue.get()
 				self.logger.info(msg)
+				while LCD_BLOCKED:
+					time.sleep(1)
+				LCD_BLOCKED = True
 				write_lcd("New Tweet!", msg)
 				self.logger.debug("Light on...")
 				GPIO.output(LIGHT_PIN, GPIO.HIGH)
 				time.sleep(LIGHT_DELAY)
 				self.logger.debug("Light off")
 				GPIO.output(LIGHT_PIN, GPIO.LOW)
-				write_lcd("Watching Twitter", "...")
 				self.queue.task_done()
+				LCD_BLOCKED = False
 			except Exception as e:
 				self.logger.error("Exception in printer: " + str(e))
 
@@ -171,12 +176,20 @@ def main():
         		printer.setDaemon(True)
         		printer.start()
 
-		# Throw some user data into the queue
+		
+		# Throw some stats on the LCD
+		# First we need to wait for the LCD to be free
+		# I'm not a huge fan of this but it works for now
+		while LCD_BLOCKED:
+			time.sleep(1)
+		LCD_BLOCKED = True
+		lcd_init()
 		user_data = watcher.getUserData()
 		for k,v in user_data.iteritems():
 			logger.debug(k + " " + v)
 			write_lcd(k, v)
 			time.sleep(4)
+		LCD_BLOCKED = False
 	
 		time.sleep(10)
 
