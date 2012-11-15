@@ -29,7 +29,7 @@ class CustomStreamListener(tweepy.StreamListener):
 	#----------------------------------------------------------------------
 	def on_status(self, status):
 		msg = Message("@" + status.user.screen_name, status.text, True)
-		self.q.put(msg)
+		self.queue.put(msg)
 
 	#----------------------------------------------------------------------
 	def on_error(self, status_code):
