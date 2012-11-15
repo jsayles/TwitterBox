@@ -167,30 +167,33 @@ def main():
 	printer = None
 	loops = 0
 	while True:
-		loops = loops + 1
-		logger.debug("Main Loop " + str(loops))
+		try:
+			loops = loops + 1
+			logger.debug("Main Loop " + str(loops))
 
-		# Make sure our twitter thread is alive and happy
-		if not watcher or not watcher.is_alive():
-			logger.info("Starting watcher thread")
-			watcher = Watcher(queue, logger)
-			watcher.setDaemon(True)
-			watcher.start()
+			# Make sure our twitter thread is alive and happy
+			if not watcher or not watcher.is_alive():
+				logger.info("Starting watcher thread")
+				watcher = Watcher(queue, logger)
+				watcher.setDaemon(True)
+				watcher.start()
 
-		# Make sure our printing thread is alive and happy
-		if not printer or not printer.is_alive():
-			logger.info("Starting printer thread")
-			printer = Printer(queue, logger)
-			printer.setDaemon(True)
-			printer.start()
+			# Make sure our printing thread is alive and happy
+			if not printer or not printer.is_alive():
+				logger.info("Starting printer thread")
+				printer = Printer(queue, logger)
+				printer.setDaemon(True)
+				printer.start()
 
-		# Throw some info in the queue if it's getting low
-		if queue.qsize() == 0:
-			for w in track:
-				queue.put((PRIORITY_LOW, "Watching for:", w, False))
-			user_data = watcher.getUserData()
-			for k,v in user_data.iteritems():
-				queue.put((PRIORITY_LOW, k, v, False))
+			# Throw some info in the queue if it's getting low
+			if queue.qsize() == 0:
+				for w in track:
+					queue.put((PRIORITY_LOW, "Watching for:", w, False))
+				user_data = watcher.getUserData()
+				for k,v in user_data.iteritems():
+					queue.put((PRIORITY_LOW, k, v, False))
+		except Exception as e:
+			self.logger.error("Exception in main thread: " + str(e))
 
 		time.sleep(15)
 
