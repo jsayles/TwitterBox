@@ -81,8 +81,7 @@ class Watcher(threading.Thread):
 
 		try:
 			user = self.api.get_user(screen_name)
-			user_data = {"Screen Name:": screen_name,
-				"Followers:": str(user.followers_count)}
+			user_data = {"@" + screen_name + ":": "Followers: " + str(user.followers_count)}
 			return user_data
 		except Exception as e:
 			self.logger.error("Could not get data for " + screen_name + ": " + str(e))
