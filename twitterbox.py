@@ -9,7 +9,13 @@ import tweepy
 import time
 import os
 
-LCD_BLOCKED = False
+########################################################################
+class Message:
+	#----------------------------------------------------------------------
+	def __init__(self, line1, line2, light):
+		self.line1 = line1
+		self.line2 = line2
+		self.light = light
 
 ########################################################################
 class CustomStreamListener(tweepy.StreamListener):
@@ -22,7 +28,8 @@ class CustomStreamListener(tweepy.StreamListener):
 
 	#----------------------------------------------------------------------
 	def on_status(self, status):
-		self.queue.put("@" + status.user.screen_name + ": " + status.text)
+		msg = Message("@" + status.user.screen_name, status.text, True)
+		self.q.put(msg)
 
 	#----------------------------------------------------------------------
 	def on_error(self, status_code):
@@ -35,7 +42,7 @@ class CustomStreamListener(tweepy.StreamListener):
 
 	#----------------------------------------------------------------------
 	def on_timeout(self):
-		self.logger.error("Timeout...")
+		self.logger.error("Twitter Timeout...")
 		return True # Don't kill the stream
 
 ########################################################################
@@ -75,7 +82,6 @@ class Watcher(threading.Thread):
 
 	#----------------------------------------------------------------------
 	def getUserData(self):
-
 		if not self.auth or not self.api:
 			self.authenticate()
 
@@ -101,19 +107,29 @@ class Printer(threading.Thread):
 	def run(self):
 		while True:
 			try:
+				# Pull the message from the queue
 				msg = self.queue.get()
-				self.logger.info(msg)
-				while LCD_BLOCKED:
-					time.sleep(1)
-				LCD_BLOCKED = True
-				write_lcd("New Tweet!", msg)
-				self.logger.debug("Light on...")
-				GPIO.output(LIGHT_PIN, GPIO.HIGH)
-				time.sleep(LIGHT_DELAY)
-				self.logger.debug("Light off")
-				GPIO.output(LIGHT_PIN, GPIO.LOW)
+				self.logger.info(msg.line1 + " " + msg.line2)
+				
+				# Clear the LCD and write the message
+				lcd_init()
+				lcd_byte(LCD_LINE_1, LCD_CMD)
+				lcd_string(msg.line1)
+				lcd_byte(LCD_LINE_2, LCD_CMD)
+				lcd_string(msg.line2)
+
+				# If we should turn the light on, do it
+				if (msg.light):
+					self.logger.debug("Light on...")
+					GPIO.output(LIGHT_PIN, GPIO.HIGH)
+					time.sleep(LIGHT_DELAY)
+					self.logger.debug("Light off")
+					GPIO.output(LIGHT_PIN, GPIO.LOW)
+				else:
+					time.sleep(LIGHT_DELAY)
+
+				# All done!
 				self.queue.task_done()
-				LCD_BLOCKED = False
 			except Exception as e:
 				self.logger.error("Exception in printer: " + str(e))
 
@@ -131,14 +147,10 @@ def main():
 		logger.setLevel(logging.INFO)
 	logger.info("Starting up...")
 
-	# A little feedback 
-	for w in track:
-		logger.info("Watching twitter for " + w)
-
 	# Not interested
 	GPIO.setwarnings(False)
 
-	# Initialise display
+	# Setup the LCD display
 	GPIO.setmode(GPIO.BCM)	     # Use BCM GPIO numbers
 	GPIO.setup(LCD_E, GPIO.OUT)  # E
 	GPIO.setup(LCD_RS, GPIO.OUT) # RS
@@ -146,15 +158,17 @@ def main():
 	GPIO.setup(LCD_D5, GPIO.OUT) # DB5
 	GPIO.setup(LCD_D6, GPIO.OUT) # DB6
 	GPIO.setup(LCD_D7, GPIO.OUT) # DB7
-	lcd_init()
 
 	# Setup the alert light
 	GPIO.setup(LIGHT_PIN, GPIO.OUT) 
 	GPIO.output(LIGHT_PIN, GPIO.LOW)
 
-	write_lcd("Watching Twitter", "...")
-
+	# The queue is where messages go to be displayed
 	queue = Queue.Queue()
+	for w in track:
+		logger.info("Watching twitter for " + w)
+		queue.put(Message("Watching for:", w, False))
+	
 	watcher = None
 	printer = None
 	loops = 0
@@ -165,39 +179,23 @@ def main():
 		# Make sure our twitter thread is alive and happy
 		if not watcher or not watcher.is_alive():
 			logger.info("Starting watcher thread")
-        		watcher = Watcher(queue, logger)
-        		watcher.setDaemon(True)
-        		watcher.start()
+			watcher = Watcher(queue, logger)
+			watcher.setDaemon(True)
+			watcher.start()
 
 		# Make sure our printing thread is alive and happy
 		if not printer or not printer.is_alive():
 			logger.info("Starting printer thread")
-        		printer = Printer(queue, logger)
-        		printer.setDaemon(True)
-        		printer.start()
+			printer = Printer(queue, logger)
+			printer.setDaemon(True)
+			printer.start()
 
-		
 		# Throw some stats on the LCD
-		# First we need to wait for the LCD to be free
-		# I'm not a huge fan of this but it works for now
-		while LCD_BLOCKED:
-			time.sleep(1)
-		LCD_BLOCKED = True
-		lcd_init()
 		user_data = watcher.getUserData()
 		for k,v in user_data.iteritems():
-			logger.debug(k + " " + v)
-			write_lcd(k, v)
-			time.sleep(4)
-		LCD_BLOCKED = False
+			queue.put(Message(k, v, False))
 	
 		time.sleep(10)
-
-def write_lcd(line1, line2):
-	lcd_byte(LCD_LINE_1, LCD_CMD)
-	lcd_string(line1)
-	lcd_byte(LCD_LINE_2, LCD_CMD)
-	lcd_string(line2)
 
 def lcd_init():
 	# Initialise display
@@ -210,18 +208,15 @@ def lcd_init():
 
 def lcd_string(message):
 	# Send string to display
-
 	message = message.ljust(LCD_WIDTH," ")	
-
 	for i in range(LCD_WIDTH):
 		lcd_byte(ord(message[i]),LCD_CHR)
 
 def lcd_byte(bits, mode):
 	# Send byte to data pins
 	# bits = data
-	# mode = True	 for character
-	#				 False for command
-
+	# mode = True for character
+	#			False for command
 	GPIO.output(LCD_RS, mode) # RS
 
 	# High bits
