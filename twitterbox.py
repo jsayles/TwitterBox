@@ -81,7 +81,7 @@ class Watcher(threading.Thread):
 
 		try:
 			user = self.api.get_user(screen_name)
-			user_data = {"@" + screen_name + ":": "Followers: " + str(user.followers_count)}
+			user_data = {"@" + screen_name + ":": "Followers: " +cd  str(user.followers_count)}
 			return user_data
 		except Exception as e:
 			self.logger.error("Could not get data for " + screen_name + ": " + str(e))
@@ -185,7 +185,7 @@ def main():
 			printer.start()
 
 		# Throw some info in the queue if it's getting low
-		if queue.qsize() < 5:
+		if queue.qsize() == 0:
 			for w in track:
 				queue.put((PRIORITY_LOW, "Watching for:", w, False))
 			user_data = watcher.getUserData()
