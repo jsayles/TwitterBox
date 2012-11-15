@@ -9,13 +9,8 @@ import tweepy
 import time
 import os
 
-########################################################################
-class Message:
-	#----------------------------------------------------------------------
-	def __init__(self, line1, line2, light):
-		self.line1 = line1
-		self.line2 = line2
-		self.light = light
+PRIORITY_LOW = 10
+PRIORITY_HIGH = 1
 
 ########################################################################
 class CustomStreamListener(tweepy.StreamListener):
@@ -28,8 +23,7 @@ class CustomStreamListener(tweepy.StreamListener):
 
 	#----------------------------------------------------------------------
 	def on_status(self, status):
-		msg = Message("@" + status.user.screen_name, status.text, True)
-		self.queue.put(msg)
+		self.queue.put((PRIORITY_HIGH, "@" + status.user.screen_name, status.text, True))
 
 	#----------------------------------------------------------------------
 	def on_error(self, status_code):
@@ -109,24 +103,27 @@ class Printer(threading.Thread):
 			try:
 				# Pull the message from the queue
 				msg = self.queue.get()
-				self.logger.info(msg.line1 + " " + msg.line2)
+				line1 = msg[1]
+				line2 = msg[2]
+				alert = msg[3]
+				self.logger.info(line1 + ": " + line2)
 				
 				# Clear the LCD and write the message
 				lcd_init()
 				lcd_byte(LCD_LINE_1, LCD_CMD)
-				lcd_string(msg.line1)
+				lcd_string(line1[:16])
 				lcd_byte(LCD_LINE_2, LCD_CMD)
-				lcd_string(msg.line2)
+				lcd_string(line2[:16])
 
 				# If we should turn the light on, do it
-				if (msg.light):
+				if (alert):
 					self.logger.debug("Light on...")
 					GPIO.output(LIGHT_PIN, GPIO.HIGH)
 					time.sleep(LIGHT_DELAY)
 					self.logger.debug("Light off")
 					GPIO.output(LIGHT_PIN, GPIO.LOW)
 				else:
-					time.sleep(LIGHT_DELAY)
+					time.sleep(5)
 
 				# All done!
 				self.queue.task_done()
@@ -164,10 +161,10 @@ def main():
 	GPIO.output(LIGHT_PIN, GPIO.LOW)
 
 	# The queue is where messages go to be displayed
-	queue = Queue.Queue()
+	queue = Queue.PriorityQueue()
 	for w in track:
 		logger.info("Watching twitter for " + w)
-		queue.put(Message("Watching for:", w, False))
+		queue.put((PRIORITY_LOW, "Watching for:", w, False))
 	
 	watcher = None
 	printer = None
@@ -193,7 +190,7 @@ def main():
 		# Throw some stats on the LCD
 		user_data = watcher.getUserData()
 		for k,v in user_data.iteritems():
-			queue.put(Message(k, v, False))
+			queue.put((PRIORITY_LOW, k, v, False))
 	
 		time.sleep(10)
 
