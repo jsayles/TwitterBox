@@ -23,7 +23,7 @@ class CustomStreamListener(tweepy.StreamListener):
 
 	#----------------------------------------------------------------------
 	def on_status(self, status):
-		self.queue.put((PRIORITY_HIGH, "@" + status.user.screen_name, status.text, True))
+		self.queue.put((PRIORITY_HIGH, "@" + status.user.screen_name + ":", status.text, True))
 
 	#----------------------------------------------------------------------
 	def on_error(self, status_code):
@@ -87,7 +87,6 @@ class Watcher(threading.Thread):
 		except Exception as e:
 			self.logger.error("Could not get data for " + screen_name + ": " + str(e))
 
-
 ########################################################################
 class Printer(threading.Thread):
 	#----------------------------------------------------------------------
@@ -103,10 +102,12 @@ class Printer(threading.Thread):
 			try:
 				# Pull the message from the queue
 				msg = self.queue.get()
+				priority = msg[0]
 				line1 = msg[1]
 				line2 = msg[2]
 				alert = msg[3]
-				self.logger.info(line1 + ": " + line2)
+				if priority == PRIORITY_HIGH:
+					self.logger.info(line1 + " " + line2)
 				
 				# Clear the LCD and write the message
 				lcd_init()
@@ -162,9 +163,6 @@ def main():
 
 	# The queue is where messages go to be displayed
 	queue = Queue.PriorityQueue()
-	for w in track:
-		logger.info("Watching twitter for " + w)
-		queue.put((PRIORITY_LOW, "Watching for:", w, False))
 	
 	watcher = None
 	printer = None
@@ -186,6 +184,10 @@ def main():
 			printer = Printer(queue, logger)
 			printer.setDaemon(True)
 			printer.start()
+
+		# Display what we are tracking
+		for w in track:
+			queue.put((PRIORITY_LOW, "Watching for:", w, False))
 
 		# Throw some stats on the LCD
 		user_data = watcher.getUserData()
