@@ -185,16 +185,15 @@ def main():
 			printer.setDaemon(True)
 			printer.start()
 
-		# Display what we are tracking
-		for w in track:
-			queue.put((PRIORITY_LOW, "Watching for:", w, False))
+		# Throw some info in the queue if it's getting low
+		if queue.qsize() < 5:
+			for w in track:
+				queue.put((PRIORITY_LOW, "Watching for:", w, False))
+			user_data = watcher.getUserData()
+			for k,v in user_data.iteritems():
+				queue.put((PRIORITY_LOW, k, v, False))
 
-		# Throw some stats on the LCD
-		user_data = watcher.getUserData()
-		for k,v in user_data.iteritems():
-			queue.put((PRIORITY_LOW, k, v, False))
-	
-		time.sleep(10)
+		time.sleep(15)
 
 def lcd_init():
 	# Initialise display
