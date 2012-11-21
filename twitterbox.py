@@ -193,9 +193,11 @@ def main():
 				for k,v in user_data.iteritems():
 					queue.put((PRIORITY_LOW, k, v, False))
 		except Exception as e:
-			self.logger.error("Exception in main thread: " + str(e))
+			logger.error("Exception in main thread: " + str(e))
 
 		time.sleep(15)
+
+	logger.warn("Exiting main thread")
 
 def lcd_init():
 	# Initialise display
