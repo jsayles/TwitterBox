@@ -145,7 +145,7 @@ def main():
 	logger.info("Starting up...")
 
 	# Not interested
-	GPIO.setwarnings(False)
+	#GPIO.setwarnings(False)
 
 	# Setup the LCD display
 	GPIO.setmode(GPIO.BCM)	     # Use BCM GPIO numbers
